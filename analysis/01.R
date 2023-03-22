@@ -82,7 +82,7 @@ logsd = informative$parameters["tau", "sigma"]
 #Prepare the priors; here we use a weakly informative prior centred at RR 1 with 95% CI between 0.25 and 4
 #This is because the majority of pharmaceutical interventions which work will be within this range
 priors_ma = 
-  brms::prior(normal(0, 0.711), class = "b", coef = "Intercept") +
+  brms::prior(normal(0, 0.71), class = "b", coef = "Intercept") +
   brms::prior(lognormal(-1.975, 0.67), class = "sd") 
 
 ## Models
