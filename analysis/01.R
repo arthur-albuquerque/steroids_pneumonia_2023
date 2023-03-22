@@ -17,6 +17,7 @@ pacman::p_load(readxl,
                ggplot2,
                bayesmeta)
 
+#Create the text for tau
 tau_text <- function(model) {
   
   posterior = 
@@ -38,10 +39,11 @@ tau_text <- function(model) {
   )
 }
 
+
+#Read the data
 dat <- read_excel("data/data.xlsx")
 
 ### turn the risk of bias into levels
-
 dat[7:12] <- lapply(dat[7:12], factor, levels=c("+", "-", "?"))
 
 ### calculate log risk ratios and corresponding sampling variances (and use
@@ -50,6 +52,7 @@ dat[7:12] <- lapply(dat[7:12], factor, levels=c("+", "-", "?"))
 dat <- escalc(measure="RR", ai=ai, n1i=n1i, ci=ci, n2i=n2i, data=dat,
               slab=paste(author, year), drop00=TRUE)
 
+#Add sei from vi
 dat$sei = sqrt(dat$vi)
 
 # Bayes
@@ -61,7 +64,7 @@ mf =
 
 ## Priors
 
-# Tau
+# Tau is based on Turner Et Al https://pubmed.ncbi.nlm.nih.gov/22461129/
 informative = bayesmeta::TurnerEtAlPrior("all-cause mortality",
                                          "pharmacological",
                                          "placebo / control")
@@ -76,6 +79,8 @@ logsd = informative$parameters["tau", "sigma"]
 # logsd
 # 0.67
 
+#Prepare the priors; here we use a weakly informative prior centred at RR 1 with 95% CI between 0.25 and 4
+#This is because the majority of pharmaceutical interventions which work will be within this range
 priors_ma = 
   brms::prior(normal(0, 0.711), class = "b", coef = "Intercept") +
   brms::prior(lognormal(-1.975, 0.67), class = "sd") 
@@ -104,9 +109,8 @@ ma_bayes =
 
 ma_bayes
 
+#This function makes the master figure which works best using PNG output as commented below and not X11/RStudio window
 forest_plot = function(){
-  
-  
   
   ### estimated average risk ratio
   
@@ -160,6 +164,7 @@ forest_plot = function(){
   ### adjust cex as used in the forest plot and use a bold font
   par(cex=sav$cex, font=2)
   
+  #Add headers
   text(sav$ilab.xpos, k+2, pos=2, c("Events","Total","Events","Total"))
   text(c(mean(sav$ilab.xpos[1:2]),mean(sav$ilab.xpos[3:4])), k+3, pos=2,
        c("Corticosteroids","Control"))
@@ -171,21 +176,22 @@ forest_plot = function(){
   ### add total events
   text(sav$ilab.xpos[c(1,3)], 0, c(sum(dat$ai),sum(dat$ci)), pos=2)
   
+  #Add header for Risk of bias legend
   text(sav$xlim[1], -3, pos=4, "Risk of bias legend")
   
   ### use a non-bold font for the rest of the text
   par(cex=sav$cex, font=1)
   
-  ### add 'Favours '/'Favours proph' text below the x-axis
+  ### add 'Favours '/'Favours proph' text below the x-axis scale
   text(log(c(.01, 100)), -2, c("Favors Corticosteroids","Favors Control"),
        pos=c(4,2), offset=-0.5)
   
-  
+  #Add the heterogeneity text using the tau_text function
   text(sav$xlim[1], -1,
        tau_text(ma_bayes),
        pos=4,
        cex=1)
-  
+  #Add a diamond for the overall analysis based on the predicted values from the bayesian CrI
   metafor::addpoly(x = pred$y,
                    ci.lb = pred$ymin,
                    ci.ub = pred$ymax,
@@ -200,13 +206,14 @@ forest_plot = function(){
        sav$textpos[2] , 0.5,
        col="white", border=NA)
   
-  # Now replace it
+
   #go bold!
   par(cex=sav$cex, font=2)
+  # Now replace the text
   text(sav$textpos[2], 0, paste0(predt[1], " [", predt[2],
                                  ",  ", predt[3], "]"),
        pos=2, bold = 2)
-  # Exit bold!
+  # Stop bold
   par(cex=sav$cex, font=1)
   
   ### add risk of bias points and symbols
@@ -219,7 +226,7 @@ forest_plot = function(){
   }
   text(pos, k+2, c("A","B","C","D","E","F"), font=2)
   
-  ### add risk of bias legend
+  ### add risk of bias legend below the heading above
   text(sav$xlim[1], -4:-9, pos=4, c(
     "(A) Bias arising from the randomization process",
     "(B) Bias due to deviations from the intended intervention",
@@ -237,18 +244,21 @@ forest_plot()
 
 ###Probability plot -
 
+#Here we set prob2 based on being below the RR corresponding to 5% ARR from weighted control event rate of 18%
+#Prob 1 implies below 0 - e.g., ARR>=0%
 probs = 
   ma_bayes |> 
   tidy_draws() |> 
   summarise(prob2 = 100*mean(b_Intercept < log(0.722)),
             prob1 = 100*mean(b_Intercept < log(1)))
 
-
+#Create the textbox
 text1<-paste0("Probability ARR >0% (dark + light purple): ",
               round(probs$prob1,1) ,
               "%\nProbability ARR >=5% (light purple): ",
               round(probs$prob2,1) |> paste0("%"))
 
+#Create a table we can reference in the graph
 overall = fixef(ma_bayes) |> data.frame()
 
 
