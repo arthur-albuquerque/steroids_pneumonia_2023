@@ -244,18 +244,18 @@ forest_plot()
 
 ###Probability plot -
 
-#Here we set prob2 based on being below the RR corresponding to 5% ARR from weighted control event rate of 18%
+#Here we set prob2 based on being below the RR corresponding to 4% ARR from weighted control event rate of 18%
 #Prob 1 implies below 0 - e.g., ARR>=0%
 probs = 
   ma_bayes |> 
   tidy_draws() |> 
-  summarise(prob2 = 100*mean(b_Intercept < log(0.722)),
+  summarise(prob2 = 100*mean(b_Intercept < log(14/18)),
             prob1 = 100*mean(b_Intercept < log(1)))
 
 #Create the textbox
 text1<-paste0("Probability ARR >0% (dark + light purple): ",
               round(probs$prob1,1) ,
-              "%\nProbability ARR >=5% (light purple): ",
+              "%\nProbability ARR >=4% (light purple): ",
               round(probs$prob2,1) |> paste0("%"))
 
 #Create a table we can reference in the graph
@@ -268,9 +268,9 @@ ggplot(data.frame(x = c(log(0.25), log(1.5))), aes(x = x)) +
   theme_bw()+
   stat_function(fun = dnorm, args=c(overall$Estimate, overall$Est.Error),
                 size=0.5)  +
-  geom_area(stat ="function", fun=dnorm, fill="darkblue", alpha=0.2, xlim=c(log(0.25),log(0.722)),
+  geom_area(stat ="function", fun=dnorm, fill="darkblue", alpha=0.2, xlim=c(log(0.25),log(14/18)),
             args=c(overall$Estimate, overall$Est.Error))+
-  geom_area(stat ="function", fun=dnorm, fill="darkblue", alpha=0.6, xlim=c(log(0.722),0),
+  geom_area(stat ="function", fun=dnorm, fill="darkblue", alpha=0.6, xlim=c(log(14/18),0),
             args=c(overall$Estimate, overall$Est.Error))+
   theme(panel.grid.minor = element_blank(),
         panel.grid.major=element_blank(),
