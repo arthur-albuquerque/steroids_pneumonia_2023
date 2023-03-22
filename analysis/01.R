@@ -137,7 +137,7 @@ forest_plot = function(){
   sav <- with(dat,
               forest(yi, vi,
                      atransf=exp,
-                     at=log(c(0.02,.10, 0.25,0.5, 1, 2,4)),
+                     at=log(c(0.01,.10, 0.25,0.5, 1, 2,4,10,100)),
                      xlim=c(-30,11),
                      ylim = c(0, 10),
                      xlab="", efac=c(0,4), textpos=c(-30,-4.7), lty=c(1,1,0), 
@@ -177,7 +177,7 @@ forest_plot = function(){
   par(cex=sav$cex, font=1)
   
   ### add 'Favours '/'Favours proph' text below the x-axis
-  text(log(c(.01, 25)), -2, c("Favors Corticosteroids","Favors Control"),
+  text(log(c(.01, 100)), -2, c("Favors Corticosteroids","Favors Control"),
        pos=c(4,2), offset=-0.5)
   
   
@@ -196,18 +196,18 @@ forest_plot = function(){
   )
   
   ### first hide the non-bold summary estimate text and then add it back in bold font
-  rect(sav$textpos[2] - 3, 0.5,
-       sav$textpos[2] , -0.5,
+  rect(sav$textpos[2] - 4, -0.5,
+       sav$textpos[2] , 0.5,
        col="white", border=NA)
   
-  # 2 times
+  # Now replace it
+  #go bold!
+  par(cex=sav$cex, font=2)
   text(sav$textpos[2], 0, paste0(predt[1], " [", predt[2],
                                  ",  ", predt[3], "]"),
        pos=2, bold = 2)
-  text(sav$textpos[2], 0, paste0(predt[1], " [", predt[2],
-                                 ",  ", predt[3], "]"),
-       pos=2, bold = 2)
-  
+  # Exit bold!
+  par(cex=sav$cex, font=1)
   
   ### add risk of bias points and symbols
   cols <- c("#00cc00", "#cc0000", "#eeee00")
@@ -230,7 +230,7 @@ forest_plot = function(){
   
 }
 
-#png(filename="C:/output/histo.png", res=350, width=3196, height=1648)
+#png(filename="C:/output/forest.png", res=350, width=3196, height=1648)
 forest_plot()
 #dev.off()
 #x11()
@@ -274,11 +274,11 @@ ggplot(data.frame(x = c(log(0.25), log(1.5))), aes(x = x)) +
     x="Risk Ratio (log scale)",
     y="Density\n"
   )+
-  geom_label(aes(x=-1,y=2,label=text1),size=3.5) +
-  scale_x_continuous(labels = c(0.35,seq(0.5, 1.25, 0.25)), 
-                     breaks = log(c(0.35, seq(0.5, 1.25, 0.25)))) +
+  geom_label(aes(x=-1,y=2.25,label=text1),size=4) +
+  scale_x_continuous(labels = c(0.25,seq(0.5, 1.25, 0.25)), 
+                     breaks = log(c(0.25, seq(0.5, 1.25, 0.25)))) +
   coord_cartesian(x = log(c(0.25, 1.3)),
-                  y = c(0, 2.3))
+                  y = c(0, 2.5))
 
 #dev.off()
 #x11()
