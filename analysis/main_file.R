@@ -3,7 +3,9 @@
 
 ### You will want to use png or pdf or tif to save this res 350, width=3196, height=1648
 
-### Assumes you have pacman installed
+# Ensures the package "pacman" is installed
+if (!require("pacman")) install.packages("pacman")
+
 ### You will also need cmdstanr and rstan installed
 ### If you are on R 4.2+ you'll need R tools to install them as well as this link
 ### https://blog.mc-stan.org/2022/04/26/stan-r-4-2-on-windows/
@@ -64,7 +66,7 @@ mf =
 
 ## Priors
 
-# Tau is based on Turner Et Al https://pubmed.ncbi.nlm.nih.gov/22461129/
+# Tau is based on Turner Et Al https://pubmed.ncbi.nlm.nih.gov/25475839/
 informative = bayesmeta::TurnerEtAlPrior("all-cause mortality",
                                          "pharmacological",
                                          "placebo / control")
@@ -108,6 +110,10 @@ ma_bayes =
   )
 
 ma_bayes
+
+plot(ma_bayes)
+
+pp_check(ma_bayes)
 
 #This function makes the master figure which works best using PNG output as commented below and not X11/RStudio window
 forest_plot = function(){
