@@ -41,6 +41,42 @@ tau_text <- function(model) {
   )
 }
 
+PI_text <- function(pred) {
+  
+  bquote(paste("95% Prediction Interval: [",
+               .(formatC(exp(pred$ymin), digits=2, format="f")),
+               .(", "),
+               .(formatC(exp(pred$ymax), digits=2, format="f")),
+               "]"
+  )
+  )
+}
+
+# Prediction Interval
+
+predictions = function(model){
+  
+  nd = data.frame(study = "new", sei = 0)
+  
+  set.seed(123)
+  
+  # Explanations: 
+  # https://twitter.com/bmwiernik/status/1473306749906169858
+  # https://twitter.com/IsabellaGhement/status/1458539033131302913/photo/1
+  # https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/
+  
+  brms::posterior_predict(object = model,
+                          newdata = nd,
+                          re_formula = NULL,
+                          allow_new_levels = TRUE,
+                          sample_new_levels = "gaussian") |> 
+    data.frame() |>
+    ggdist::median_hdi() |> 
+    dplyr::rename(y = 1,
+                  ymin = .lower,
+                  ymax = .upper)
+}
+
 
 #Read the data
 dat <- read_excel("data/data.xlsx")
@@ -149,7 +185,7 @@ forest_plot = function(){
                      atransf=exp,
                      at=log(c(0.01,.10, 0.25,0.5, 1, 2,4,10,100)),
                      xlim=c(-30,11),
-                     ylim = c(0, 10),
+                     ylim = c(-1, 10),
                      xlab="", efac=c(0,4), textpos=c(-30,-4.7), lty=c(1,1,0), 
                      refline=NA,
                      ilab=cbind(ai, n1i, ci, n2i),
@@ -157,7 +193,7 @@ forest_plot = function(){
                      cex=0.78, header=c("Study","Median, 95% CI"), mlab="")
   )
   
-### add horizontal line at the top
+  ### add horizontal line at the top
   segments(sav$xlim[1]+0.5, k+1, sav$xlim[2], k+1, lwd=0.8)
   
   ### add vertical reference line at 0
@@ -189,7 +225,7 @@ forest_plot = function(){
   par(cex=sav$cex, font=1)
   
   ### add 'Favours '/'Favours proph' text below the x-axis scale
-  text(log(c(.01, 100)), -2, c("Favors Corticosteroids","Favors Control"),
+  text(log(c(.01, 100)), -3, c("Favors Corticosteroids","Favors Control"),
        pos=c(4,2), offset=-0.5)
   
   #Add the heterogeneity text using the tau_text function
@@ -202,7 +238,7 @@ forest_plot = function(){
                    ci.lb = pred$ymin,
                    ci.ub = pred$ymax,
                    
-                  # mlab = "Total [95% CrI]", # label
+                   # mlab = "Total [95% CrI]", # label
                    row=0, # location
                    efac = 3 # polygon size
   )
@@ -212,13 +248,40 @@ forest_plot = function(){
        sav$textpos[2] , 0.5,
        col="white", border=NA)
   
-
+  
   #go bold!
   par(cex=sav$cex, font=2)
   # Now replace the text
   text(sav$textpos[2], 0, paste0(predt[1], " [", predt[2],
                                  ",  ", predt[3], "]"),
        pos=2, bold = 2)
+  
+  # Prediction Interval
+  
+  PI_ma = predictions(ma_bayes)
+  
+  colp = "#6b58a6"
+  coll = "#a7a9ac"
+  
+  metafor::addpoly(x = PI_ma$y,
+                   ci.lb = PI_ma$ymin,
+                   ci.ub = PI_ma$ymax,
+                   
+                   pi.lb = PI_ma$ymin, # prediction interval
+                   pi.ub = PI_ma$ymax, # prediction interval
+                   annotate=FALSE,
+                   
+                   mlab = " ", # label
+                   row=-1, # location
+                   atransf=exp,
+                   efac = 2, # polygon size
+                   col=colp, border=colp
+  )
+  
+  text(sav$textpos[2], -1,
+       PI_text(PI_ma),
+       pos=2)
+  
   # Stop bold
   par(cex=sav$cex, font=1)
   
@@ -243,11 +306,9 @@ forest_plot = function(){
   
 }
 
-#png(filename="C:/output/forest.png", res=350, width=3196, height=1648)
+#png(filename="output/forest.png", res=350, width=3196, height=1648)
 forest_plot()
 #dev.off()
-#x11()
-
 ###Probability plot -
 
 #Here we set prob2 based on being below the RR corresponding to 4% ARR from weighted control event rate of 18%
@@ -268,7 +329,7 @@ text1<-paste0("Probability ARR >0% (dark + light purple): ",
 overall = fixef(ma_bayes) |> data.frame()
 
 
-#png(filename="C:/output/probability.png", res=350, width=3196, height=1648)
+#png(filename="output/probability.png", res=350, width=3196, height=1648)
 ggplot(data.frame(x = c(log(0.25), log(1.5))), aes(x = x)) +
   geom_vline(xintercept = 0, linetype="dashed",color="red")+  
   theme_bw()+
@@ -296,5 +357,4 @@ ggplot(data.frame(x = c(log(0.25), log(1.5))), aes(x = x)) +
   coord_cartesian(x = log(c(0.25, 1.3)),
                   y = c(0, 2.5))
 
-#dev.off()
-#x11()
+# dev.off()
